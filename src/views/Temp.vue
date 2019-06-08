@@ -1,68 +1,81 @@
 <template>
   <div class="home">
-    
-    <textarea v-model.lazy="temp"></textarea>
+    <el-alert
+      :closable="false"
+      :title="connected ? '连接成功，当前连接数' + userNum : '连接失败'"
+      :type="connected ? 'success' : 'error'"
+    />
+    <br>
+    <el-input type="textarea" :autosize="{ minRows: 10}" placeholder="请输入内容" v-model.lazy="temp"></el-input>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'temp',
+  name: "temp",
   data() {
     return {
-      temp: '',
+      temp: "",
+      userNum: 0,
+      connected: false,
       websock: null
-    }
+    };
   },
   watch: {
     temp(newQuestion, oldQuestion) {
       if (newQuestion !== this.getTemp) {
-        this.websocketsend(newQuestion)
+        this.websocketsend(newQuestion);
         this.getTemp = null;
       }
     }
   },
-　created() {
+  created() {
     //页面刚进入时开启长连接
-    this.initWebSocket()
+    this.initWebSocket();
   },
-　destroyed() {
-　  //页面销毁时关闭长连接
-　　　this.websocketclose();
-　},
-  methods: { 
-　　　　　　initWebSocket(){ //初始化weosocket 
-　　　　　　　
-　　　　　　　　const wsuri = "ws://xuyang520.cn/api/ws";//ws地址
-　　　　　　　　this.websock = new WebSocket(wsuri); 
+  destroyed() {
+    //页面销毁时关闭长连接
+    this.websock.close();
+  },
+  methods: {
+    initWebSocket() {
+      //初始化weosocket
+      const wsuri = "ws://xuyang520.cn/api/ws"; //ws地址
+      this.websock = new WebSocket(wsuri);
+      this.websock.onopen = this.websocketonopen;
+      this.websock.onerror = this.websocketonerror;
+      this.websock.onmessage = this.websocketonmessage;
+      this.websock.onclose = this.websocketclose;
+    },
+    websocketonopen() {
+      this.connected = true;
+    },
+    websocketonerror(e) {
+      this.$message({
+        showClose: true,
+        message: "连接错误"
+      });
+      this.connected = false;
+    },
+    websocketonmessage(e) {
+      //数据接收
 
+      let json = JSON.parse(e.data);
+      if (json.type === "msg") {
+        this.getTemp = json.data;
+        this.temp = json.data;
+      } else if (json.type === "userNum") {
+        this.userNum = json.data
+      }
+    },
+    websocketsend(agentData) {
+      //数据发送
+      this.websock.send(agentData);
+    },
 
-　　　　　　　　this.websock.onmessage = this.websocketonmessage; 
-　　　　　　　　this.websock.onclose = this.websocketclose;
-　　　　   }, 
-　　　　　　websocketonopen() {
-　　　　　　　　console.log("WebSocket连接成功");
-　　　　　　},
-　　　　　　websocketonerror(e) { //错误
- 　　　　　　 console.log("WebSocket连接发生错误");
-　　　　　　},
-　　　　　　websocketonmessage(e){ //数据接收 
-　　　　　　　　　//注意：长连接我们是后台直接1秒推送一条数据， 
-          //但是点击某个列表时，会发送给后台一个标识，后台根据此标识返回相对应的数据，
-      //这个时候数据就只能从一个出口出，所以让后台加了一个键，例如键为1时，是每隔1秒推送的数据，为2时是发送标识后再推送的数据，以作区分
-　　　　　　　　console.log("接收", e.data); 
-this.getTemp = e.data
-              this.temp = e.data
-　　　　　　}, 
-
-　　　　　　websocketsend(agentData){//数据发送 
-             console.log("发送：", agentData)
-　　　　　　　　this.websock.send(agentData); 
-　　　　　　}, 
-
-　　　　　 websocketclose(e){ //关闭 
-　　　　　　　　console.log("connection closed (" + e.code + ")"); 
-　　　　　},
-　　　}, 
-}
+    websocketclose(e) {
+      this.connected = false;
+    }
+  }
+};
 </script>

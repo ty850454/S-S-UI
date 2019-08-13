@@ -1,12 +1,11 @@
 <template>
-  <div class="home">
-    <el-alert
-      :closable="false"
-      :title="connected ? '连接成功，当前连接数' + userNum : '连接失败'"
-      :type="connected ? 'success' : 'error'"
-    />
+  <div class="temp">
+    <a-alert :message="connected ? '连接成功，当前连接数' + userNum : '连接失败'" :type="connected ? 'success' : 'error'" banner />
     <br>
-    <el-input type="textarea" :autosize="{ minRows: 10}" placeholder="请输入内容" v-model.lazy="temp"></el-input>
+    <div class="tools">
+      <a-button type="primary" @click="jsonFormat">json格式化</a-button>
+    </div>
+    <a-textarea :autosize="{ minRows: 10}" placeholder="请输入内容" v-model.lazy="temp"/>
   </div>
 </template>
 
@@ -40,7 +39,8 @@ export default {
   methods: {
     initWebSocket() {
       //初始化weosocket
-      const wsuri = "ws://xuyang520.cn/api/ws"; //ws地址
+      // const wsuri = "ws://xuyang520.cn/api/ws"; //ws地址
+      const wsuri = "ws://127.0.0.1:8080/api/ws"; //ws地址
       this.websock = new WebSocket(wsuri);
       this.websock.onopen = this.websocketonopen;
       this.websock.onerror = this.websocketonerror;
@@ -51,10 +51,7 @@ export default {
       this.connected = true;
     },
     websocketonerror(e) {
-      this.$message({
-        showClose: true,
-        message: "连接错误"
-      });
+      this.$message.error("连接错误");
       this.connected = false;
     },
     websocketonmessage(e) {
@@ -65,17 +62,32 @@ export default {
         this.getTemp = json.data;
         this.temp = json.data;
       } else if (json.type === "userNum") {
-        this.userNum = json.data
+        this.userNum = json.data;
       }
     },
     websocketsend(agentData) {
       //数据发送
       this.websock.send(agentData);
     },
-
     websocketclose(e) {
       this.connected = false;
+    },
+    jsonFormat() {
+      let temp = this.temp;
+      try {
+        temp = JSON.parse(temp);
+        temp = JSON.stringify(temp, null, 4);
+        this.temp = temp;
+      } catch {
+        this.$message.error("json格式化失败");
+      }
     }
   }
 };
 </script>
+<style scoped>
+.tools {
+  margin: 5px 5px;
+  text-align: left;
+}
+</style>

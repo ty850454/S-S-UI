@@ -51,6 +51,7 @@ export default {
       this.connected = true;
     },
     websocketonerror(e) {
+      console.log(e)
       this.$message.error("连接错误");
       this.connected = false;
     },
@@ -70,6 +71,7 @@ export default {
       this.websock.send(agentData);
     },
     websocketclose(e) {
+      console.log(e.reason)
       this.connected = false;
     },
     jsonFormat() {
